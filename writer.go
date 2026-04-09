@@ -15,7 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// Card is a single text front/back pair (Basic note).
+// Card is a single text front/back pair.
 type Card struct {
 	Front string
 	Back  string
