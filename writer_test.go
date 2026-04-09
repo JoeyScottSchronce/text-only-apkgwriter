@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"io"
 	"os"
 	"testing"
@@ -75,5 +76,25 @@ func TestWriteApkg(t *testing.T) {
 	}
 	if flds != "Q1\x1fA1" {
 		t.Fatalf("flds: %q", flds)
+	}
+
+	var modelsJSON string
+	if err := db.QueryRow(`SELECT models FROM col`).Scan(&modelsJSON); err != nil {
+		t.Fatal(err)
+	}
+	var models map[string]map[string]any
+	if err := json.Unmarshal([]byte(modelsJSON), &models); err != nil {
+		t.Fatal(err)
+	}
+	wantName := "Test Deck"
+	var gotName string
+	for _, m := range models {
+		if n, ok := m["name"].(string); ok {
+			gotName = n
+			break
+		}
+	}
+	if gotName != wantName {
+		t.Fatalf("note type name: got %q want %q (models JSON uses deck title, not Basic)", gotName, wantName)
 	}
 }

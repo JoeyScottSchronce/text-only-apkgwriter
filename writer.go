@@ -57,9 +57,6 @@ func WriteApkg(w io.Writer, deckTitle string, cards []Card) error {
 	if displayName == "" {
 		displayName = "Untitled Deck"
 	}
-	// #region agent log
-	debugAgentLog("H2", "writer.go:WriteApkg", "displayName", map[string]any{"rawDeckTitle": deckTitle, "displayName": displayName})
-	// #endregion
 	if err := insertCol(db, deckID, modelID, displayName, tsSec, int(tsMs)); err != nil {
 		return err
 	}
@@ -176,9 +173,6 @@ func insertCol(db *sql.DB, deckID, modelID int64, deckTitle string, crt, modMs i
 	}
 
 	model := buildModelJSON(modelID, deckID, modMs/1000, deckTitle)
-	// #region agent log
-	debugAgentLog("H3", "writer.go:insertCol", "model after buildModelJSON", map[string]any{"deckTitle": deckTitle, "modelName": model["name"]})
-	// #endregion
 	models := map[string]any{
 		fmt.Sprintf("%d", modelID): model,
 	}
@@ -273,27 +267,3 @@ func SanitizeDeckTitle(title string) string {
 	}
 	return out
 }
-
-// #region agent log
-func debugAgentLog(hypothesisId, location, message string, data map[string]any) {
-	f, err := os.OpenFile("/home/tidespear/Desktop/ankideck/.cursor/debug-403cc7.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	payload := map[string]any{
-		"sessionId":    "403cc7",
-		"timestamp":    time.Now().UnixMilli(),
-		"hypothesisId": hypothesisId,
-		"location":     location,
-		"message":      message,
-		"data":         data,
-	}
-	b, err := json.Marshal(payload)
-	if err != nil {
-		return
-	}
-	_, _ = f.Write(append(b, '\n'))
-}
-
-// #endregion
