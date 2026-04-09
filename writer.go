@@ -126,6 +126,8 @@ func randomDeckID() int64 {
 	return int64(1<<30 + v%(1<<30))
 }
 
+// insertCol persists the collection row. json.Marshal on these map[string]any blobs only fails for
+// values encoding/json cannot represent (e.g. NaN/Inf floats, chan/func); current literals are all safe.
 func insertCol(db *sql.DB, deckID, modelID int64, deckTitle string, crt, modMs int) error {
 	conf := map[string]any{
 		"activeDecks":   []int64{deckID},
@@ -142,7 +144,10 @@ func insertCol(db *sql.DB, deckID, modelID int64, deckTitle string, crt, modMs i
 		"sortType":      "noteFld",
 		"timeLim":       0,
 	}
-	confB, _ := json.Marshal(conf)
+	confB, err := json.Marshal(conf)
+	if err != nil {
+		return fmt.Errorf("apkgwriter: marshal col conf: %w", err)
+	}
 
 	decks := map[string]any{
 		"1": map[string]any{
@@ -158,13 +163,19 @@ func insertCol(db *sql.DB, deckID, modelID int64, deckTitle string, crt, modMs i
 			"newToday": []int{0, 0}, "revToday": []int{0, 0}, "timeToday": []int{0, 0}, "usn": -1,
 		},
 	}
-	decksB, _ := json.Marshal(decks)
+	decksB, err := json.Marshal(decks)
+	if err != nil {
+		return fmt.Errorf("apkgwriter: marshal col decks: %w", err)
+	}
 
 	model := buildModelJSON(modelID, deckID, modMs/1000)
 	models := map[string]any{
 		fmt.Sprintf("%d", modelID): model,
 	}
-	modelsB, _ := json.Marshal(models)
+	modelsB, err := json.Marshal(models)
+	if err != nil {
+		return fmt.Errorf("apkgwriter: marshal col models: %w", err)
+	}
 
 	dconf := map[string]any{
 		"1": map[string]any{
@@ -184,9 +195,12 @@ func insertCol(db *sql.DB, deckID, modelID int64, deckTitle string, crt, modMs i
 			"timer": 0, "usn": 0,
 		},
 	}
-	dconfB, _ := json.Marshal(dconf)
+	dconfB, err := json.Marshal(dconf)
+	if err != nil {
+		return fmt.Errorf("apkgwriter: marshal col dconf: %w", err)
+	}
 
-	_, err := db.Exec(`INSERT INTO col VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+	_, err = db.Exec(`INSERT INTO col VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		1, crt, modMs, modMs, 11, 0, 0, 0,
 		string(confB), string(modelsB), string(decksB), string(dconfB), "{}",
 	)
