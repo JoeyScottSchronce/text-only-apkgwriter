@@ -53,7 +53,11 @@ func WriteApkg(w io.Writer, deckTitle string, cards []Card) error {
 	deckID := randomDeckID()
 	modelID := tsMs // epoch ms, matches Anki model id convention
 
-	if err := insertCol(db, deckID, modelID, deckTitle, tsSec, int(tsMs)); err != nil {
+	displayName := strings.TrimSpace(deckTitle)
+	if displayName == "" {
+		displayName = "Untitled Deck"
+	}
+	if err := insertCol(db, deckID, modelID, displayName, tsSec, int(tsMs)); err != nil {
 		return err
 	}
 
@@ -168,7 +172,7 @@ func insertCol(db *sql.DB, deckID, modelID int64, deckTitle string, crt, modMs i
 		return fmt.Errorf("apkgwriter: marshal col decks: %w", err)
 	}
 
-	model := buildModelJSON(modelID, deckID, modMs/1000)
+	model := buildModelJSON(modelID, deckID, modMs/1000, deckTitle)
 	models := map[string]any{
 		fmt.Sprintf("%d", modelID): model,
 	}
@@ -207,7 +211,7 @@ func insertCol(db *sql.DB, deckID, modelID int64, deckTitle string, crt, modMs i
 	return err
 }
 
-func buildModelJSON(modelID, deckID int64, modSec int) map[string]any {
+func buildModelJSON(modelID, deckID int64, modSec int, noteTypeName string) map[string]any {
 	flds := []any{
 		map[string]any{"name": "Front", "ord": 0, "font": "Liberation Sans", "media": []any{}, "rtl": false, "size": 20, "sticky": false},
 		map[string]any{"name": "Back", "ord": 1, "font": "Liberation Sans", "media": []any{}, "rtl": false, "size": 20, "sticky": false},
@@ -229,7 +233,7 @@ func buildModelJSON(modelID, deckID int64, modSec int) map[string]any {
 		"latexPre":  "\\documentclass[12pt]{article}\n\\usepackage[utf8]{inputenc}\n\\begin{document}\n",
 		"latexsvg":  false,
 		"mod":       modSec,
-		"name":      "Basic",
+		"name":      noteTypeName,
 		"req":       []any{[]any{0, "all", []any{0}}},
 		"sortf":     0,
 		"tags":      []any{},
