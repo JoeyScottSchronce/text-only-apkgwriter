@@ -35,3 +35,11 @@ The current API is **not** a streaming pipeline from SQLite into the zip. Suppor
 **Locally:** `go vet ./...` and `go test ./...` (from the module root).
 
 **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same commands on **push** and **pull_request** to **`main`** (Go version from **`go.mod`**).
+
+## License
+
+SPDX **MIT** — see [`LICENSE`](LICENSE).
+
+## Changelog
+
+Release history: [`CHANGELOG.md`](CHANGELOG.md) ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/) style). Tag **`v0.1.0`** and later on GitHub correspond to semver bumps; read this file or compare tags for breaking vs additive `.apkg` / API changes before upgrading.
