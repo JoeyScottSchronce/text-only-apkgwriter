@@ -16,6 +16,10 @@ func GuidFor(values ...string) string {
 	for _, b := range sum[:8] {
 		hashInt = (hashInt << 8) | uint64(b)
 	}
+	return guidFromHashInt(hashInt)
+}
+
+func guidFromHashInt(hashInt uint64) string {
 	if hashInt == 0 {
 		return "a"
 	}
@@ -24,7 +28,6 @@ func GuidFor(values ...string) string {
 		rev = append(rev, base91Table[hashInt%uint64(len(base91Table))])
 		hashInt /= uint64(len(base91Table))
 	}
-	// reverse
 	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
 		rev[i], rev[j] = rev[j], rev[i]
 	}
