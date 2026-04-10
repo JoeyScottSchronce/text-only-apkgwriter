@@ -29,3 +29,9 @@ The primary consumer, **[ankideck-backend](https://github.com/JoeyScottSchronce/
 **Streaming / chunking**
 
 The current API is **not** a streaming pipeline from SQLite into the zip. Supporting **lower peak memory** or **chunked** export would require **new exported functions** or signatures; that is **out of scope** until implemented.
+
+## Tests
+
+**Locally:** `go vet ./...` and `go test ./...` (from the module root).
+
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the same commands on **push** and **pull_request** to **`main`** (Go version from **`go.mod`**).
