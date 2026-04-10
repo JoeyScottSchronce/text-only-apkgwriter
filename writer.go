@@ -22,7 +22,8 @@ type Card struct {
 }
 
 // WriteApkg writes a text-only .apkg (zip with collection.anki2 + media) to w.
-// Media support may be added later without breaking this signature.
+// Resource model: temporary SQLite on disk, full os.ReadFile into memory, then zip—O(n) in cards and field sizes; this package enforces no max deck size (callers should cap inputs).
+// The collection is not streamed from SQLite into the zip; streaming or chunked export would need a different API. Media support may be added later without breaking this signature.
 func WriteApkg(w io.Writer, deckTitle string, cards []Card) error {
 	if len(cards) == 0 {
 		return fmt.Errorf("apkgwriter: no cards")

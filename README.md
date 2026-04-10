@@ -1,60 +1,31 @@
 # text-only-apkgwriter
 
-Go library that builds a **text-only** Anki `.apkg` package (zip with SQLite collection).
+Go library that writes a **text-only** Anki **`.apkg`**: a zip containing **`collection.anki2`** (SQLite) and a minimal **`media`** manifest.
 
-**Canonical repository:** [github.com/JoeyScottSchronce/text-only-apkgwriter](https://github.com/JoeyScottSchronce/text-only-apkgwriter)
+```go
+import "github.com/JoeyScottSchronce/text-only-apkgwriter"
 
-## Module
-
-```text
-module github.com/JoeyScottSchronce/text-only-apkgwriter
+err := apkgwriter.WriteApkg(w, "My deck", []apkgwriter.Card{
+    {Front: "Q", Back: "A"},
+})
 ```
 
-Consumers (e.g. AnkiDeck’s export service):
+## Resource use and large decks
 
-```bash
-go get github.com/JoeyScottSchronce/text-only-apkgwriter@v0.1.0
-```
+**Memory model**
 
-Use a **semver tag** (`v0.1.0`, …) after the first release so `go get` resolves without `replace`.
+1. All notes are written into a **temporary SQLite file** on disk (`os.CreateTemp`).
+2. After the DB is closed, the library **`os.ReadFile`s the entire file** into a `[]byte`.
+3. That blob is written into **`collection.anki2`** inside a **`zip.Writer`** on the caller’s `io.Writer`.
 
-## Publish this repo (initial)
+Work is **O(n)** in **card count** and **front/back sizes**. Peak memory is driven by the **full collection file size** plus whatever the **`archive/zip`** path and your `io.Writer` hold (callers that use a `bytes.Buffer` also retain the full `.apkg` in memory).
 
-If this tree is the first content for the GitHub repo (empty remote):
+There is **no maximum deck size, card count, or field length** inside this package so it stays usable from CLIs and tests. **Callers** must cap workload if they care about OOM risk.
 
-```bash
-cd apkgwriter   # or the folder containing this README + go.mod
-git init
-git add .
-git commit -m "Initial import: text-only apkg writer"
-git branch -M main
-git remote add origin https://github.com/JoeyScottSchronce/text-only-apkgwriter.git
-git push -u origin main
-git tag v0.1.0
-git push origin v0.1.0
-```
+**Recommended limits (reference consumer)**
 
-Then in **AnkiDeck** (or any consumer), remove the `replace` line in `backend/go.mod`, run:
+The primary consumer, **[ankideck-backend](https://github.com/JoeyScottSchronce/ankideck-backend)**, validates each card with **`domain.FilterValid`** ( **`MaxFieldRunes`** per question/answer). Generate responses also cap at **`MaxCardsPerDeck`**; the export HTTP handler does **not** apply that same numeric card ceiling—deck size is mainly bounded by the **~8 MiB** JSON body limit (`io.LimitReader` in **`internal/httpexport`**). Those policies live in the API layer and are **not duplicated** in this library.
 
-```bash
-go get github.com/JoeyScottSchronce/text-only-apkgwriter@v0.1.0
-```
+**Streaming / chunking**
 
-and delete the local `apkgwriter/` copy from the monorepo if you no longer want a submodule.
-
-## API
-
-- `apkgwriter.Card` — `Front` / `Back` strings.
-- `apkgwriter.WriteApkg(w io.Writer, deckTitle string, cards []Card) error`
-
-No HTTP server and **no** dependency on app frontends or API servers.
-
-## Tests
-
-```bash
-go test ./...
-```
-
-## Scope
-
-v1 is **text-only**; the package can grow to support media later without breaking callers.
+The current API is **not** a streaming pipeline from SQLite into the zip. Supporting **lower peak memory** or **chunked** export would require **new exported functions** or signatures; that is **out of scope** until implemented.
